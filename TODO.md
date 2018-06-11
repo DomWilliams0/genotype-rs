@@ -1,6 +1,6 @@
 - [ ] Add examples
 - [ ] Add crate level example
-- [ ] Add ParamSet2d too
+- [x] Add ParamSet2d too
 - [ ] Add macro for param definition
 - [x] Add assert_eq for floats in tests
-- [ ] Travis
+- [x] Travis
