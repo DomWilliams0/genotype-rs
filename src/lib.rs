@@ -9,8 +9,7 @@ extern crate serde;
 #[cfg(feature = "serialize")]
 extern crate serde_derive;
 
-pub type Param = f64;
-pub type ParamHolderRef<P> = Rc<RefCell<P>>;
+pub type Param = f64; // replace this with a generic parameter?
 
 #[derive(Debug)]
 pub struct GenericParams<PH: ParamHolder> {
@@ -111,7 +110,7 @@ impl<'a> AddAssign<Param> for &'a mut RangedParam {
     }
 }
 
-pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: ParamHolderRef<P>, mut_gen: &mut MG) {
+pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut_gen: &mut MG) {
     let params = GenericParams::new(param_holder);
 
     for i in 0..params.n {
