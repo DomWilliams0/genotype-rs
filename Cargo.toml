@@ -16,4 +16,4 @@ serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
 
 [badges]
-travis-ci = { repository = "https://travis-ci.org/DomWilliams0/genotype-rs", branch = "master" }
+travis-ci = { repository = "DomWilliams0/genotype-rs", branch = "master" }
