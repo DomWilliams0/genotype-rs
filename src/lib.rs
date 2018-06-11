@@ -13,6 +13,8 @@ extern crate serde;
 #[cfg(feature = "serialize")]
 extern crate serde_derive;
 
+pub mod param_set;
+
 /// The type of a single gene.
 pub type Param = f64; // TODO replace this with a generic parameter?
 
@@ -151,47 +153,6 @@ pub trait RangedParam {
     }
 }
 
-/// Helper struct to represent a collection of related parameters in multiple dimensions.
-pub trait ParamSet<P: RangedParam>: ParamHolder + Default {}
-
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct ParamSet3d<P: RangedParam> {
-    x: P,
-    y: P,
-    z: P,
-}
-
-impl<P: RangedParam + Default> ParamSet<P> for ParamSet3d<P> {}
-
-impl<P: RangedParam> ParamHolder for ParamSet3d<P> {
-    fn param_count(&self) -> usize {
-        3
-    }
-    fn get_param(&mut self, index: usize) -> &mut RangedParam {
-        match index % 3 {
-            0 => &mut self.x,
-            1 => &mut self.y,
-            2 => &mut self.z,
-            _ => panic!("out of bounds"),
-        }
-    }
-}
-
-impl<P: RangedParam> ParamSet3d<P> {
-    pub fn new(x: P, y: P, z: P) -> Self {
-        Self { x, y, z }
-    }
-
-    pub fn components_scaled(&self) -> (Param, Param, Param) {
-        (
-            self.x.get_scaled(),
-            self.y.get_scaled(),
-            self.z.get_scaled(),
-        )
-    }
-}
-
 /// A mutation generator, that produces an offset to add to the current value.
 /// Should range between -1.0 and 1.0, but the result will be clamped anyway
 pub trait MutationGen {
@@ -226,7 +187,7 @@ pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{param_set::*, *};
 
     struct TestParam(Param);
 
@@ -294,13 +255,11 @@ mod tests {
         assert!((holder.borrow().x.get_scaled() - 20.0).abs() < 0.001);
     }
 
-    #[derive(Debug, Default)]
+    #[derive(Debug)]
     struct Pos(Param);
 
-    #[derive(Debug, Default)]
-    struct MultiShape {
-        pos: ParamSet3d<Pos>,
-    }
+    #[derive(Debug)]
+    struct MultiShape(ParamSet3d<Pos>);
 
     impl RangedParam for Pos {
         fn range(&self) -> (Param, Param) {
@@ -323,7 +282,7 @@ mod tests {
 
         fn get_param(&mut self, index: usize) -> &mut RangedParam {
             match index {
-                0...2 => self.pos.get_param(index),
+                0...2 => self.0.get_param(index),
                 _ => panic!("Bad param index"),
             }
         }
@@ -331,11 +290,15 @@ mod tests {
 
     #[test]
     fn test_paramset() {
-        let holder = Rc::new(RefCell::new(MultiShape::default()));
-        mutate(holder.clone(), &mut ConstGen { 0: 0.25 });
+        let holder = Rc::new(RefCell::new(MultiShape(ParamSet3d::new(
+            Pos(0.1),
+            Pos(0.1),
+            Pos(0.1),
+        ))));
+        mutate(holder.clone(), &mut ConstGen { 0: 0.15 });
 
         let expected = 2.5; // 10.0 * 0.25
-        let pos = &holder.borrow().pos;
+        let pos = &holder.borrow().0;
         assert!((pos.x.get_scaled() - expected).abs() < 0.001);
         assert!((pos.y.get_scaled() - expected).abs() < 0.001);
         assert!((pos.z.get_scaled() - expected).abs() < 0.001);
