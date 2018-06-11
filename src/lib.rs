@@ -22,8 +22,8 @@ pub type Param = f64; // TODO replace this with a generic parameter?
 # Examples
 ```
 # use genotype::*;
-struct Weight(f64);
-struct Height(f64);
+struct Weight(Param);
+struct Height(Param);
 
 impl RangedParam for Weight {
     fn range(&self) -> (Param, Param) {
@@ -78,12 +78,12 @@ pub trait ParamHolder {
     fn get_param(&mut self, index: usize) -> &mut RangedParam;
 }
 
-/** Access to a decoded gene's value, i.e. the phenotype.
+/** Access to a gene's scaled value, i.e. the phenotype. The unscaled value is clamped between 0.0 and 1.0.
 # Examples
 
 ```
 # use genotype::*;
-struct Weight(f64); // kg
+struct Weight(Param); // kg
 
 impl RangedParam for Weight {
 
@@ -107,9 +107,6 @@ assert_eq!(weight.get(), 0.55);
 assert_eq!(weight.get_scaled(), 73.0);
 # }
 ```
-
-
-
 */
 pub trait RangedParam {
     /** The range of allowed values, in the form `(min, max).`
@@ -186,14 +183,13 @@ pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut
 }
 
 #[cfg(test)]
-macro_rules! assert_feq{
-    ($a:expr, $b:expr) => ({
+macro_rules! assert_feq {
+    ($a:expr, $b:expr) => {{
         let (a, b) = (&$a, &$b);
         let diff = (a - b).abs();
         assert!(diff < 0.00001, "{} !~= {}", a, b);
-    })
+    }};
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -251,9 +247,7 @@ mod tests {
 
     #[test]
     fn test_clamp() {
-        let holder = Rc::new(RefCell::new(TestHolder {
-            x: TestParam(0.0)
-        }));
+        let holder = Rc::new(RefCell::new(TestHolder { x: TestParam(0.0) }));
         mutate(holder.clone(), &mut ConstGen { 0: -0.5 });
         assert_feq!(holder.borrow().x.get_scaled(), 0.0);
 
