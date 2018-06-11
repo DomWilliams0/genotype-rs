@@ -1,3 +1,7 @@
+//! This crate allows easy access and modification of the genotype of of an individual.
+//! Independent of the phenotype, genes remain between 0 and 1, and can be indexed, iterated or modified in-place.
+//! TODO: full example
+
 use std::cell::RefCell;
 use std::ops::AddAssign;
 use std::rc::Rc;
@@ -9,38 +13,145 @@ extern crate serde;
 #[cfg(feature = "serialize")]
 extern crate serde_derive;
 
-pub type Param = f64; // replace this with a generic parameter?
+/// The type of a single gene.
+pub type Param = f64; // TODO replace this with a generic parameter?
 
-#[derive(Debug)]
-pub struct GenericParams<PH: ParamHolder> {
-    owner: Rc<RefCell<PH>>,
-    n: usize,
+/** An entity with multiple parameters, i.e. a chromosone.
+# Examples
+```
+# use genotype::*;
+struct Weight(f64);
+struct Height(f64);
+
+impl RangedParam for Weight {
+    fn range(&self) -> (Param, Param) {
+        (40.0, 100.0)
+    }
+    // ...
+#
+#     fn get(&self) -> Param { self.0 }
+#
+#     fn get_mut(&mut self) -> &mut Param {&mut self.0}
 }
 
-/// An entity with multiple parameters.
+impl RangedParam for Height {
+    fn range(&self) -> (Param, Param) {
+        (140.0, 185.0)
+    }
+    // ...
+#
+#     fn get(&self) -> Param { self.0 }
+#
+#     fn get_mut(&mut self) -> &mut Param {&mut self.0}
+}
+
+
+struct Human {
+    weight: Weight,
+    height: Height,
+}
+
+impl ParamHolder for Human {
+    fn param_count(&self) -> usize {
+        2
+    }
+
+    fn get_param(&mut self, index: usize) -> &mut RangedParam {
+        match index {
+            0 => &mut self.weight,
+            1 => &mut self.height,
+            _ => panic!("Bad index"),
+        }
+    }
+}
+```
+*/
 pub trait ParamHolder {
+    /// The number of parameters/genes on this chromosone.
     fn param_count(&self) -> usize;
+
+    /// Returns a mutable reference to the gene at the given index.
+    /// # Panics
+    /// If `index >= self.param_count()`
     fn get_param(&mut self, index: usize) -> &mut RangedParam;
 }
 
-/// An individual parameter with a specified range.
+/** Access to a decoded gene's value, i.e. the phenotype.
+# Examples
+
+```
+# use genotype::*;
+struct Weight(f64); // kg
+
+impl RangedParam for Weight {
+
+    fn range(&self) -> (Param, Param) {
+        (40.0, 100.0) // arbitrary weight range
+    }
+
+    fn get(&self) -> Param { self.0 }
+
+    fn get_mut(&mut self) -> &mut Param {&mut self.0}
+}
+
+# fn main() {
+let mut weight = Weight(0.5);
+assert_eq!(weight.get(), 0.5);
+assert_eq!(weight.get_scaled(), 70.0);
+
+// mutate the genotype a tad
+*weight.get_mut() += 0.05;
+assert_eq!(weight.get(), 0.55);
+assert_eq!(weight.get_scaled(), 73.0);
+# }
+```
+
+
+
+*/
 pub trait RangedParam {
-    /// (min, max)
+    /** The range of allowed values, in the form `(min, max).`
+    # Examples
+    The value in phenotype space remains between 0 and 1 (default implementation):
+    ```
+    # use genotype::Param;
+    # struct X;
+    # impl X {
+    fn range(&self) -> (Param, Param) {
+        (0.0, 1.0)
+    }
+    # }
+    ```
+
+    The phenotype value is between 100 and 200:
+    ```
+    # use genotype::Param;
+    # struct X;
+    # impl X {
+    fn range(&self) -> (Param, Param) {
+        (100.0, 200.0)
+    }
+    # }
+    ```
+    */
     fn range(&self) -> (Param, Param) {
         (0.0, 1.0) // unscaled
     }
 
+    /// Returns the *unscaled* parameter value.
     fn get(&self) -> Param;
 
+    /// Returns a mutable reference to the raw parameter value.
     fn get_mut(&mut self) -> &mut Param;
 
+    /// Returns the parameter value scaled to the range returned by [range](#method.range) i.e. the gene expressed in the phenotype.
     fn get_scaled(&self) -> Param {
         let (min, max) = self.range();
         (max - min) * self.get() + min
     }
 }
 
-/// Collection of related parameters in multiple dimensions.
+/// Helper struct to represent a collection of related parameters in multiple dimensions.
 pub trait ParamSet<P: RangedParam>: ParamHolder + Default {}
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -87,13 +198,6 @@ pub trait MutationGen {
     fn gen(&mut self) -> Param;
 }
 
-impl<PH: ParamHolder> GenericParams<PH> {
-    fn new(holder: Rc<RefCell<PH>>) -> Self {
-        let n = holder.borrow().param_count();
-        Self { owner: holder, n }
-    }
-}
-
 impl<'a> AddAssign<Param> for &'a mut RangedParam {
     fn add_assign(&mut self, rhs: Param) {
         let clamped = {
@@ -111,10 +215,10 @@ impl<'a> AddAssign<Param> for &'a mut RangedParam {
 }
 
 pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut_gen: &mut MG) {
-    let params = GenericParams::new(param_holder);
+    let n = param_holder.borrow().param_count();
 
-    for i in 0..params.n {
-        let mut holder = params.owner.borrow_mut();
+    for i in 0..n {
+        let mut holder = param_holder.borrow_mut();
         let mut p: &mut RangedParam = holder.get_param(i);
         p += mut_gen.gen();
     }
