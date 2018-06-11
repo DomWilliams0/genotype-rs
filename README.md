@@ -1,5 +1,7 @@
 # genotype-rs
 [![Build Status](https://travis-ci.org/DomWilliams0/genotype-rs.svg?branch=master)](https://travis-ci.org/DomWilliams0/genotype-rs)
+[![Docs](https://docs.rs/genotype/badge.svg)](https://docs.rs/genotype)
+[![Crates.io](https://img.shields.io/crates/v/genotype.svg)](https://crates.io/crates/genotype)
 
 An abstraction layer between genotype and phenotype, with in-place mutation.
 

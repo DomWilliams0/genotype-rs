@@ -7,6 +7,7 @@ authors = ["Dom Williams <me@domwillia.ms>"]
 
 homepage = "https://github.com/DomWilliams0/genotype-rs"
 repository = "https://github.com/DomWilliams0/genotype-rs"
+readme = "README.md"
 
 [features]
 serialize = ["serde", "serde_derive"]
