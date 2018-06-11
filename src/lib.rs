@@ -2,11 +2,12 @@
 //! Independent of the phenotype, genes remain between 0 and 1, and can be indexed, iterated or modified in-place.
 /*! # Examples
 ```
-# use genotype::*;
-# use genotype::param_set::*;
-# use genotype::mutation::*;
 # use std::rc::Rc;
 # use std::cell::RefCell;
+use genotype::{Param, ParamHolder, RangedParam};
+use genotype::param_set::{ParamSet2d};
+use genotype::mutation::*;
+
 // a length in space in 1 dimension
 // - can range from 1m to 20m
 #[derive(Debug)]

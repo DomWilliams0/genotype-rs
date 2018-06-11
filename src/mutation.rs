@@ -43,7 +43,6 @@ impl ParamHolder for Human {
 #        }
 #    }
 }
-
 # fn main() {
 # use std::cell::RefCell;
 # use std::rc::Rc;
