@@ -3,7 +3,7 @@
 
 An abstraction layer between genotype and phenotype, with in-place mutation.
 
-```
+```rust
 use genotype::{Param, ParamHolder, RangedParam};
 use genotype::param_set::{ParamSet2d};
 use genotype::mutation::*;
