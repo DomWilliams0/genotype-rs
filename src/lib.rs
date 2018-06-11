@@ -186,9 +186,18 @@ pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut
 }
 
 #[cfg(test)]
+macro_rules! assert_feq{
+    ($a:expr, $b:expr) => ({
+        let (a, b) = (&$a, &$b);
+        let diff = (a - b).abs();
+        assert!(diff < 0.00001, "{} !~= {}", a, b);
+    })
+}
+
+
+#[cfg(test)]
 mod tests {
     use super::{param_set::*, *};
-
     struct TestParam(Param);
 
     struct TestHolder {
@@ -237,22 +246,20 @@ mod tests {
         }));
         mutate(holder.clone(), &mut ConstGen { 0: 0.5 });
 
-        let expected = 10.0; // 20.0 * 0.5
-        let diff = (holder.borrow().x.get_scaled() - expected).abs();
-        assert!(diff < 0.001);
+        assert_feq!(holder.borrow().x.get_scaled(), 10.0);
     }
 
     #[test]
     fn test_clamp() {
         let holder = Rc::new(RefCell::new(TestHolder {
-            x: TestParam { 0: 0.0 },
+            x: TestParam(0.0)
         }));
         mutate(holder.clone(), &mut ConstGen { 0: -0.5 });
-        assert!(holder.borrow().x.get_scaled() < 0.001);
+        assert_feq!(holder.borrow().x.get_scaled(), 0.0);
 
         // should be equal to max
         mutate(holder.clone(), &mut ConstGen { 0: 1.5 });
-        assert!((holder.borrow().x.get_scaled() - 20.0).abs() < 0.001);
+        assert_feq!(holder.borrow().x.get_scaled(), 20.0);
     }
 
     #[derive(Debug)]
@@ -299,8 +306,8 @@ mod tests {
 
         let expected = 2.5; // 10.0 * 0.25
         let pos = &holder.borrow().0;
-        assert!((pos.x.get_scaled() - expected).abs() < 0.001);
-        assert!((pos.y.get_scaled() - expected).abs() < 0.001);
-        assert!((pos.z.get_scaled() - expected).abs() < 0.001);
+        assert_feq!(pos.x.get_scaled(), expected);
+        assert_feq!(pos.y.get_scaled(), expected);
+        assert_feq!(pos.z.get_scaled(), expected);
     }
 }
