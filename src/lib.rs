@@ -1,6 +1,83 @@
 //! This crate allows easy access and modification of the genotype of of an individual.
 //! Independent of the phenotype, genes remain between 0 and 1, and can be indexed, iterated or modified in-place.
-//! TODO: full example
+/*! # Examples
+```
+# use genotype::*;
+# use genotype::param_set::*;
+# use genotype::mutation::*;
+# use std::rc::Rc;
+# use std::cell::RefCell;
+// a length in space in 1 dimension
+// - can range from 1m to 20m
+#[derive(Debug)]
+struct Dimension(Param);
+
+// rotation in degrees
+// - can range from 0 - 360 degrees
+#[derive(Debug)]
+struct Rotation(Param);
+
+// a 2d cuboid shape in space with a rotation
+#[derive(Debug)]
+struct Shape {
+    dimensions: ParamSet2d<Dimension>,
+    rotation: Rotation,
+}
+
+// implement RangedParam for each parameter
+impl RangedParam for Dimension {
+    fn range(&self) -> (Param, Param) {
+        (1.0, 20.0)
+    }
+
+    // necessary boilerplate (for now)
+    fn get(&self) -> Param { self.0 }
+    fn get_mut(&mut self) -> &mut Param { &mut self.0 }
+}
+
+impl RangedParam for Rotation {
+    fn range(&self) -> (Param, Param) {
+        (0.0, 360.0)
+    }
+
+    fn get(&self) -> Param { self.0 }
+    fn get_mut(&mut self) -> &mut Param { &mut self.0 }
+}
+
+// implement ParamHolder for shape
+impl ParamHolder for Shape {
+    // 2 for dimensions + 1 for rotation
+    fn param_count(&self) -> usize { self.dimensions.param_count() + 1 }
+
+    fn get_param(&mut self, index: usize) -> &mut RangedParam {
+        match index {
+            0...1 => self.dimensions.get_param(index),
+            2 => &mut self.rotation,
+            _ => panic!("Bad index"),
+        }
+    }
+}
+
+// custom mutation generator to always mutate by the same amount
+struct ConstGen(Param);
+
+impl MutationGen for ConstGen {
+    fn gen(&mut self) -> Param { self.0 }
+}
+
+// create - Rc and RefCell required for in-place mutation
+let shape = Rc::new(RefCell::new(Shape {
+    dimensions: ParamSet2d::new(Dimension(0.5), Dimension(0.5)),
+    rotation: Rotation(0.0),
+}));
+println!("shape: {:?}", shape);
+
+// mutate in place by adding 0.1 to all genes
+mutate(shape.clone(), &mut ConstGen(0.1));
+println!("mutated shape: {:?}", shape);
+```
+
+*/
 
 use std::ops::AddAssign;
 
