@@ -2,9 +2,7 @@
 //! Independent of the phenotype, genes remain between 0 and 1, and can be indexed, iterated or modified in-place.
 //! TODO: full example
 
-use std::cell::RefCell;
 use std::ops::AddAssign;
-use std::rc::Rc;
 
 #[cfg(feature = "serialize")]
 extern crate serde;
@@ -13,6 +11,7 @@ extern crate serde;
 #[cfg(feature = "serialize")]
 extern crate serde_derive;
 
+pub mod mutation;
 pub mod param_set;
 
 /// The type of a single gene.
@@ -78,7 +77,9 @@ pub trait ParamHolder {
     fn get_param(&mut self, index: usize) -> &mut RangedParam;
 }
 
-/** Access to a gene's scaled value, i.e. the phenotype. The unscaled value is clamped between 0.0 and 1.0.
+/** Access to a gene's scaled value, i.e. the phenotype.
+
+  The unscaled value is clamped between 0.0 and 1.0.
 # Examples
 
 ```
@@ -150,12 +151,6 @@ pub trait RangedParam {
     }
 }
 
-/// A mutation generator, that produces an offset to add to the current value.
-/// Should range between -1.0 and 1.0, but the result will be clamped anyway
-pub trait MutationGen {
-    fn gen(&mut self) -> Param;
-}
-
 impl<'a> AddAssign<Param> for &'a mut RangedParam {
     fn add_assign(&mut self, rhs: Param) {
         let clamped = {
@@ -172,16 +167,6 @@ impl<'a> AddAssign<Param> for &'a mut RangedParam {
     }
 }
 
-pub fn mutate<P: ParamHolder, MG: MutationGen>(param_holder: Rc<RefCell<P>>, mut_gen: &mut MG) {
-    let n = param_holder.borrow().param_count();
-
-    for i in 0..n {
-        let mut holder = param_holder.borrow_mut();
-        let mut p: &mut RangedParam = holder.get_param(i);
-        p += mut_gen.gen();
-    }
-}
-
 #[cfg(test)]
 macro_rules! assert_feq {
     ($a:expr, $b:expr) => {{
@@ -193,7 +178,10 @@ macro_rules! assert_feq {
 
 #[cfg(test)]
 mod tests {
-    use super::{param_set::*, *};
+    use super::{mutation::*, param_set::*, *};
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
     struct TestParam(Param);
 
     struct TestHolder {
