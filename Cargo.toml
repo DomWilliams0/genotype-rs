@@ -2,7 +2,7 @@
 name = "genotype"
 version = "0.1.0"
 description = "An abstraction layer between genotype and phenotype, with in-place mutation."
-license = "GPL-3.0-or-later"
+license = "GPL-3.0"
 authors = ["Dom Williams <me@domwillia.ms>"]
 
 homepage = "https://github.com/DomWilliams0/genotype-rs"
